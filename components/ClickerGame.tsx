@@ -251,7 +251,7 @@ export default function ClickerGame() {
             const speed = 0.4 + (i % 3) * 0.15
             const angle = (now / 1000) * speed + (i * (Math.PI * 2) / cursorCount)
             const cx = 50 + (radius / (window?.innerWidth ?? 390) * 100) * Math.cos(angle)
-            const cy = 50 + (radius / (window?.innerHeight * 0.5 ?? 340) * 100) * Math.sin(angle)
+            const cy = 50 + (radius / ((window?.innerHeight ?? 680) * 0.5) * 100) * Math.sin(angle)
             const pointing = angle * (180 / Math.PI) + 90
             return (
               <span key={`cursor-${i}`} className="absolute pointer-events-none text-base leading-none"
