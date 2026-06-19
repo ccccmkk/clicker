@@ -5,7 +5,6 @@ import { loadGameState, saveGameState, fetchRanking, supabase, type RankEntry } 
 import { UPGRADES, CLICK_UPGRADES, SKINS, getCost, getTotalCps, getClickPower, formatNumber, type Skin } from '@/lib/gameLogic'
 
 type FloatingText = { id: number; x: number; y: number; text: string; color: string }
-type Building = { id: number; upgradeId: string; x: number; y: number; animOffset: number }
 type GoldenCookie = { id: number; x: number; y: number }
 
 function getUserId(): string {
@@ -24,12 +23,10 @@ export default function ClickerGame() {
   const [upgrades, setUpgrades] = useState<Record<string, number>>({})
   const [clickUpgrades, setClickUpgrades] = useState<Record<string, number>>({})
   const [floats, setFloats] = useState<FloatingText[]>([])
-  const [buildings, setBuildings] = useState<Building[]>([])
   const [cookieScale, setCookieScale] = useState(1)
   const [loaded, setLoaded] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'remote' | 'local'>('idle')
   const [loadSource, setLoadSource] = useState<'remote' | 'local' | 'none'>('none')
-  const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'auto' | 'click' | 'rank' | 'skin'>('auto')
   const [nickname, setNickname] = useState('')
   const [nicknameInput, setNicknameInput] = useState('')
@@ -46,22 +43,10 @@ export default function ClickerGame() {
   const clickUpgradesRef = useRef<Record<string, number>>({})
   const nicknameRef = useRef('')
   const floatId = useRef(0)
-  const buildingId = useRef(0)
   const goldenId = useRef(0)
   const userId = useRef('')
 
   const skin: Skin = SKINS.find(s => s.id === activeSkinId) ?? SKINS[0]
-
-  const rebuildBuildings = useCallback((ups: Record<string, number>) => {
-    const list: Building[] = []
-    UPGRADES.forEach(upgrade => {
-      const count = Math.min(ups[upgrade.id] || 0, 10)
-      for (let i = 0; i < count; i++) {
-        list.push({ id: buildingId.current++, upgradeId: upgrade.id, x: 5 + Math.random() * 85, y: 50 + Math.random() * 44, animOffset: Math.random() * 3000 })
-      }
-    })
-    setBuildings(list)
-  }, [])
 
   useEffect(() => {
     userId.current = getUserId()
@@ -87,11 +72,10 @@ export default function ClickerGame() {
         setCookies(state.cookies); setTotalCookies(state.total_cookies)
         setTotalClicks(state.total_clicks); setUpgrades(state.upgrades || {})
         setClickUpgrades(state.click_upgrades || {})
-        rebuildBuildings(state.upgrades || {})
       }
       setLoaded(true)
     }).catch(() => { clearTimeout(timeout); setLoaded(true) })
-  }, [rebuildBuildings])
+  }, [])
 
   // CPS tick
   useEffect(() => {
@@ -193,8 +177,8 @@ export default function ClickerGame() {
     cookiesRef.current -= cost
     upgradesRef.current = { ...upgradesRef.current, [upgradeId]: owned + 1 }
     setCookies(cookiesRef.current)
-    const nu = { ...upgradesRef.current }; setUpgrades(nu); rebuildBuildings(nu)
-  }, [rebuildBuildings])
+    const nu = { ...upgradesRef.current }; setUpgrades(nu)
+  }, [])
 
   const buyClickUpgrade = useCallback((upgradeId: string) => {
     const upgrade = CLICK_UPGRADES.find(u => u.id === upgradeId)
@@ -259,20 +243,24 @@ export default function ClickerGame() {
       {/* 쿠키 영역 */}
       <div className="relative flex-none" style={{ height: '50vh' }}>
 
-        {/* 건물 시각화 */}
-        {buildings.map(b => {
-          const upgrade = UPGRADES.find(u => u.id === b.upgradeId)!
-          const t = (now + b.animOffset) / 1000
-          const bobY = Math.sin(t * (b.upgradeId === 'cursor' ? 3 : 1.2)) * 4
-          const rotate = b.upgradeId === 'cursor' ? Math.sin(t * 3) * 20 : Math.sin(t * 0.8) * 4
-          const size = b.upgradeId === 'cursor' ? '1rem' : b.upgradeId === 'grandma' ? '1.5rem' : '1.8rem'
-          return (
-            <span key={b.id} className="absolute pointer-events-none leading-none"
-              style={{ left: `${b.x}%`, top: `${b.y}%`, fontSize: size, transform: `translateY(${bobY}px) rotate(${rotate}deg)`, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
-              {upgrade.icon}
-            </span>
-          )
-        })}
+        {/* 커서: 쿠키 주변 원형 궤도 */}
+        {(() => {
+          const cursorCount = Math.min(upgrades['cursor'] || 0, 16)
+          const radius = 82 // px, 쿠키(w-36=144px) 반지름 72px + 여유
+          return Array.from({ length: cursorCount }).map((_, i) => {
+            const speed = 0.4 + (i % 3) * 0.15
+            const angle = (now / 1000) * speed + (i * (Math.PI * 2) / cursorCount)
+            const cx = 50 + (radius / (window?.innerWidth ?? 390) * 100) * Math.cos(angle)
+            const cy = 50 + (radius / (window?.innerHeight * 0.5 ?? 340) * 100) * Math.sin(angle)
+            const pointing = angle * (180 / Math.PI) + 90
+            return (
+              <span key={`cursor-${i}`} className="absolute pointer-events-none text-base leading-none"
+                style={{ left: `${cx}%`, top: `${cy}%`, transform: `translate(-50%,-50%) rotate(${pointing}deg)`, filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))' }}>
+                👆
+              </span>
+            )
+          })
+        })()}
 
         {/* 황금 쿠키 */}
         {goldenCookie && (
@@ -359,6 +347,7 @@ export default function ClickerGame() {
               const canAfford = cookies >= cost
               const progress = Math.min(cookies / cost, 1)
               const thisCps = upgrade.baseCps * (owned + 1)
+              const displayIcons = Math.min(owned, 10)
               return (
                 <button key={upgrade.id} onClick={() => buyAutoUpgrade(upgrade.id)} disabled={!canAfford}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left relative overflow-hidden ${canAfford ? `${skin.theme.btn} ${skin.theme.btnHover}` : 'bg-white/5 border-white/10 opacity-60'}`}>
@@ -369,6 +358,15 @@ export default function ClickerGame() {
                       <span className="font-bold text-sm text-white">{upgrade.name}</span>
                       {owned > 0 && <span className="bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">×{owned}</span>}
                     </div>
+                    {/* 보유 건물 미니 이모지 시각화 */}
+                    {displayIcons > 0 && (
+                      <div className="flex flex-wrap gap-0.5 my-0.5">
+                        {Array.from({ length: displayIcons }).map((_, i) => (
+                          <span key={i} className="text-xs leading-none opacity-80">{upgrade.icon}</span>
+                        ))}
+                        {owned > 10 && <span className={`text-xs ${skin.theme.subtext}`}>+{owned - 10}</span>}
+                      </div>
+                    )}
                     <div className={`${skin.theme.subtext} text-xs flex gap-2`}>
                       <span>{upgrade.description}</span>
                       <span className="text-green-400">+{formatNumber(thisCps)}/초</span>
