@@ -26,14 +26,18 @@ export type RankEntry = {
 }
 
 export async function loadGameState(userId: string): Promise<GameState | null> {
-  const { data, error } = await supabase
-    .from('game_state')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('game_state')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
 
-  if (error || !data) return null
-  return data as GameState
+    if (error || !data) return null
+    return data as GameState
+  } catch {
+    return null
+  }
 }
 
 export async function saveGameState(state: GameState): Promise<void> {
