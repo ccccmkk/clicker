@@ -9,7 +9,11 @@ create table if not exists steal_log (
   created_at timestamptz default now()
 );
 alter table steal_log enable row level security;
-create policy if not exists "Anyone can read/write steal_log" on steal_log for all using (true) with check (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'steal_log' and policyname = 'Anyone can read/write steal_log') then
+    execute 'create policy "Anyone can read/write steal_log" on steal_log for all using (true) with check (true)';
+  end if;
+end $$;
 
 -- 2. game_state 컬럼 추가
 alter table game_state add column if not exists defense_power bigint default 0;
