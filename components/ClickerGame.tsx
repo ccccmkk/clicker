@@ -28,7 +28,7 @@ export default function ClickerGame() {
   const [loaded, setLoaded] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'remote' | 'local'>('idle')
   const [loadSource, setLoadSource] = useState<'remote' | 'local' | 'none'>('none')
-  const [activeTab, setActiveTab] = useState<'auto' | 'click' | 'rank' | 'skin'>('auto')
+  const [activeTab, setActiveTab] = useState<'auto' | 'click' | 'rank' | 'stat' | 'skin'>('auto')
   const [nickname, setNickname] = useState('')
   const [nicknameInput, setNicknameInput] = useState('')
   const [showNicknameModal, setShowNicknameModal] = useState(false)
@@ -254,7 +254,7 @@ export default function ClickerGame() {
 
         {/* 커서: 쿠키 주변 원형 궤도 */}
         {(() => {
-          const cursorCount = Math.min(upgrades['cursor'] || 0, 16)
+          const cursorCount = Math.min(upgrades['cursor'] || 0, 8)
           const radius = 82 // px, 쿠키(w-36=144px) 반지름 72px + 여유
           return Array.from({ length: cursorCount }).map((_, i) => {
             const speed = 0.4 + (i % 3) * 0.15
@@ -335,13 +335,14 @@ export default function ClickerGame() {
       <div className={`flex-1 flex flex-col ${skin.theme.panel} border-t ${skin.theme.border} min-h-0`}>
         {/* 탭 */}
         <div className={`flex border-b ${skin.theme.border} flex-shrink-0 text-xs`}>
-          {(['auto', 'click', 'rank', 'skin'] as const).map(tab => (
+          {(['auto', 'click', 'rank', 'stat', 'skin'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 font-bold transition-colors ${activeTab === tab ? 'bg-white/10 text-white' : skin.theme.subtext}`}>
               {tab === 'auto' ? '🏭 자동'
                 : tab === 'click' ? '👆 클릭'
                 : tab === 'rank' ? `🏆${myRank > 0 ? ` #${myRank}` : ''}`
-                : `🎨 ${unlockedCookieSkins.length + unlockedBgThemes.length}/${COOKIE_SKINS.length + BG_THEMES.length}`}
+                : tab === 'stat' ? '📊'
+                : `🎨`}
             </button>
           ))}
         </div>
@@ -449,6 +450,47 @@ export default function ClickerGame() {
                   </div>
                 )
               })}
+          </div>
+        )}
+
+        {/* 통계 */}
+        {activeTab === 'stat' && (
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div className={`${skin.theme.subtext} text-xs px-1 pb-1 font-bold`}>내 통계</div>
+            {[
+              { label: '총 쿠키 생산', value: `🍪 ${formatNumber(totalCookies)}`, sub: '누적 생산량' },
+              { label: '현재 쿠키', value: `🍪 ${formatNumber(cookies)}`, sub: '보유 중' },
+              { label: '초당 생산 (CPS)', value: `${formatNumber(cps)}/초`, sub: `자동 생산 건물 합산` },
+              { label: '클릭 파워', value: `+${formatNumber(clickPower)}/클릭`, sub: '클릭 업그레이드 합산' },
+              { label: '총 클릭 수', value: `${formatNumber(totalClicks)}회`, sub: '손가락이 고생했어요' },
+            ].map(item => (
+              <div key={item.label} className={`flex items-center justify-between p-3 rounded-xl border bg-white/5 border-white/10`}>
+                <div>
+                  <div className="text-sm text-white font-medium">{item.label}</div>
+                  <div className={`text-xs ${skin.theme.subtext}`}>{item.sub}</div>
+                </div>
+                <div className={`text-sm font-bold ${skin.theme.text}`}>{item.value}</div>
+              </div>
+            ))}
+            <div className={`${skin.theme.subtext} text-xs px-1 pt-2 pb-1 font-bold`}>건물별 생산</div>
+            {UPGRADES.filter(u => (upgrades[u.id] || 0) > 0).map(u => {
+              const owned = upgrades[u.id] || 0
+              const thisCps = u.baseCps * owned
+              return (
+                <div key={u.id} className={`flex items-center justify-between p-3 rounded-xl border bg-white/5 border-white/10`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{u.icon}</span>
+                    <div>
+                      <div className="text-sm text-white">{u.name} ×{owned}</div>
+                    </div>
+                  </div>
+                  <div className={`text-sm font-bold text-green-400`}>+{formatNumber(thisCps)}/초</div>
+                </div>
+              )
+            })}
+            {Object.values(upgrades).every(v => !v) && (
+              <div className={`${skin.theme.subtext} text-sm text-center py-4`}>아직 건물이 없어요</div>
+            )}
           </div>
         )}
 
