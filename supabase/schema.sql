@@ -14,3 +14,6 @@ alter table game_state enable row level security;
 
 create policy "Anyone can read/write game state" on game_state
   for all using (true) with check (true);
+
+-- click_upgrades 컬럼 추가 (이미 테이블 있는 경우)
+alter table game_state add column if not exists click_upgrades jsonb default '{}'::jsonb;

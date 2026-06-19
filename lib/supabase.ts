@@ -8,20 +8,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 export type GameState = {
-  id?: string
   user_id: string
   nickname?: string
   cookies: number
   total_clicks: number
   total_cookies: number
   upgrades: Record<string, number>
-  updated_at?: string
+  click_upgrades: Record<string, number>
 }
 
 export type RankEntry = {
   user_id: string
   nickname: string
   total_cookies: number
+  total_clicks: number
 }
 
 export async function loadGameState(userId: string): Promise<GameState | null> {
@@ -32,7 +32,7 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
       .eq('user_id', userId)
       .single()
     if (error || !data) return null
-    return data as GameState
+    return { ...data, click_upgrades: data.click_upgrades || {} } as GameState
   } catch {
     return null
   }
@@ -48,6 +48,7 @@ export async function saveGameState(state: GameState): Promise<void> {
         total_clicks: state.total_clicks,
         total_cookies: Math.floor(state.total_cookies),
         upgrades: state.upgrades,
+        click_upgrades: state.click_upgrades,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id' }
@@ -59,7 +60,7 @@ export async function fetchRanking(): Promise<RankEntry[]> {
   try {
     const { data, error } = await supabase
       .from('game_state')
-      .select('user_id, nickname, total_cookies')
+      .select('user_id, nickname, total_cookies, total_clicks')
       .order('total_cookies', { ascending: false })
       .limit(20)
     if (error || !data) return []
