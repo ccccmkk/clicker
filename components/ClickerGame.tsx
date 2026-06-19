@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { loadGameState, saveGameState, fetchRanking, supabase, type RankEntry } from '@/lib/supabase'
+import { loadGameState, saveGameState, fetchRanking, fetchStealLog, breakShield, stealCookies, regenDefense, supabase, type RankEntry, type StealLogEntry } from '@/lib/supabase'
 import { UPGRADES, CLICK_UPGRADES, COOKIE_SKINS, BG_THEMES, getCost, getTotalCps, getClickPower, formatNumber } from '@/lib/gameLogic'
 
 type FloatingText = { id: number; x: number; y: number; text: string; color: string }
@@ -37,6 +37,10 @@ export default function ClickerGame() {
   const [goldenCookie, setGoldenCookie] = useState<GoldenCookie | null>(null)
   const [activeCookieSkinId, setActiveCookieSkinId] = useState('cookie')
   const [activeBgThemeId, setActiveBgThemeId] = useState('home')
+  const [defensePower, setDefensePower] = useState(0)
+  const [stealLog, setStealLog] = useState<StealLogEntry[]>([])
+  const [attackMsg, setAttackMsg] = useState<string>('')
+  const [revengeMap, setRevengeMap] = useState<Record<string, number>>({})
 
   const cookiesRef = useRef(0)
   const totalCookiesRef = useRef(0)
@@ -44,6 +48,8 @@ export default function ClickerGame() {
   const upgradesRef = useRef<Record<string, number>>({})
   const clickUpgradesRef = useRef<Record<string, number>>({})
   const nicknameRef = useRef('')
+  const defenseRef = useRef(0)
+  const revengeRef = useRef<Record<string, number>>({})
   const floatId = useRef(0)
   const goldenId = useRef(0)
   const userId = useRef('')
@@ -74,11 +80,24 @@ export default function ClickerGame() {
           nicknameRef.current = state.nickname; setNickname(state.nickname)
           localStorage.setItem('cookie_nickname', state.nickname)
         }
+        defenseRef.current = state.defense_power ?? 0
+        revengeRef.current = state.revenge_map ?? {}
+        setDefensePower(state.defense_power ?? 0)
+        setRevengeMap(state.revenge_map ?? {})
         setCookies(state.cookies); setTotalCookies(state.total_cookies)
         setTotalClicks(state.total_clicks); setUpgrades(state.upgrades || {})
         setClickUpgrades(state.click_upgrades || {})
+        // 하루 1회 방어막 자동 보충
+        const cps = getTotalCps(state.upgrades || {})
+        regenDefense(userId.current, cps).then(r => {
+          if (r.regenerated && r.amount) {
+            defenseRef.current = Math.min(defenseRef.current + r.amount, 50000)
+            setDefensePower(defenseRef.current)
+          }
+        })
       }
       setLoaded(true)
+      fetchStealLog(userId.current).then(setStealLog)
     }).catch(() => { clearTimeout(timeout); setLoaded(true) })
   }, [])
 
@@ -106,6 +125,8 @@ export default function ClickerGame() {
         cookies: cookiesRef.current, total_cookies: totalCookiesRef.current,
         total_clicks: totalClicksRef.current, upgrades: upgradesRef.current,
         click_upgrades: clickUpgradesRef.current,
+        cps_estimate: Math.floor(getTotalCps(upgradesRef.current)),
+        defense_power: defenseRef.current,
       })
       setSaveStatus(result)
       setTimeout(() => setSaveStatus('idle'), 2000)
@@ -154,7 +175,9 @@ export default function ClickerGame() {
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
     const power = getClickPower(clickUpgradesRef.current)
     cookiesRef.current += power; totalCookiesRef.current += power; totalClicksRef.current += 1
+    defenseRef.current = Math.min(defenseRef.current + 1, 50000)
     setCookies(cookiesRef.current); setTotalCookies(totalCookiesRef.current); setTotalClicks(totalClicksRef.current)
+    setDefensePower(defenseRef.current)
     setCookieScale(0.88); setTimeout(() => setCookieScale(1), 100)
 
     const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
@@ -206,6 +229,7 @@ export default function ClickerGame() {
       cookies: cookiesRef.current, total_cookies: totalCookiesRef.current,
       total_clicks: totalClicksRef.current, upgrades: upgradesRef.current,
       click_upgrades: clickUpgradesRef.current,
+      cps_estimate: Math.floor(getTotalCps(upgradesRef.current)),
     })
   }, [nicknameInput])
 
@@ -429,35 +453,126 @@ export default function ClickerGame() {
           </div>
         )}
 
-        {/* 랭킹 */}
+        {/* 랭킹 + PvP */}
         {activeTab === 'rank' && (
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-            <div className={`${skin.theme.subtext} text-xs px-1 pb-1 flex items-center gap-1.5`}>
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />실시간
+            {/* 내 방어막 현황 */}
+            <div className={`flex items-center justify-between px-3 py-2 rounded-xl border bg-white/10 border-white/20 mb-1`}>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🛡️</span>
+                <div>
+                  <div className={`text-xs font-bold ${skin.theme.text}`}>내 방어막</div>
+                  <div className={`text-xs ${skin.theme.subtext}`}>클릭할수록 쌓임</div>
+                </div>
+              </div>
+              <div className={`text-lg font-bold ${defensePower > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatNumber(defensePower)}
+              </div>
+            </div>
+
+            {attackMsg && (
+              <div className="px-3 py-2 rounded-xl bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs text-center">
+                {attackMsg}
+              </div>
+            )}
+
+            <div className={`${skin.theme.subtext} text-xs px-1 pb-0.5 flex items-center gap-1.5`}>
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />실시간 랭킹
             </div>
             {ranking.length === 0
               ? <div className={`${skin.theme.subtext} text-sm text-center py-8`}>데이터 없음</div>
               : ranking.map((entry, i) => {
                 const isMe = entry.user_id === userId.current
                 const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null
+                const revenge = revengeMap[entry.user_id]
+                const shielded = (entry.defense_power ?? 0) > 0
                 return (
                   <div key={entry.user_id}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${isMe ? 'bg-white/20 border-white/30' : 'bg-white/5 border-white/10'}`}>
-                    <span className="w-6 text-center text-base flex-shrink-0">
-                      {medal ?? <span className={`${skin.theme.subtext} text-xs`}>{i + 1}</span>}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-medium text-sm truncate ${isMe ? skin.theme.text : skin.theme.subtext}`}>
-                        {entry.nickname || '익명의 제빵사'}{isMe && <span className={`${skin.theme.subtext} text-xs ml-1`}>(나)</span>}
-                      </div>
-                      <div className={`${skin.theme.subtext} text-xs flex gap-2`}>
-                        <span>🍪 {formatNumber(entry.total_cookies)}</span>
-                        <span>👆 {formatNumber(entry.total_clicks)}회</span>
+                    className={`rounded-xl border ${isMe ? 'bg-white/20 border-white/30' : 'bg-white/5 border-white/10'}`}>
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="w-6 text-center text-base flex-shrink-0">
+                        {medal ?? <span className={`${skin.theme.subtext} text-xs`}>{i + 1}</span>}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`font-medium text-sm truncate ${isMe ? skin.theme.text : skin.theme.subtext}`}>
+                            {entry.nickname || '익명의 제빵사'}
+                          </span>
+                          {isMe && <span className={`${skin.theme.subtext} text-xs`}>(나)</span>}
+                          {revenge && <span className="text-xs bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full">복수 ×{revenge}</span>}
+                        </div>
+                        <div className={`${skin.theme.subtext} text-xs flex gap-2 flex-wrap`}>
+                          <span>🍪 {formatNumber(entry.total_cookies)}</span>
+                          <span>⚡ {formatNumber(entry.cps_estimate)}/초</span>
+                          <span>👆 {formatNumber(entry.total_clicks)}회</span>
+                          <span>{shielded ? `🛡️ ${formatNumber(entry.defense_power)}` : '🔓 무방비'}</span>
+                        </div>
                       </div>
                     </div>
+                    {!isMe && (
+                      <div className="flex gap-1.5 px-3 pb-2">
+                        {shielded ? (
+                          <button
+                            onClick={async () => {
+                              const r = await breakShield(userId.current, entry.user_id)
+                              if (r.success) {
+                                setAttackMsg(`⚔️ 방어막 파괴! 남은 방어막: ${formatNumber(r.defense)}`)
+                                fetchRanking().then(setRanking)
+                              }
+                              setTimeout(() => setAttackMsg(''), 2000)
+                            }}
+                            className="flex-1 py-1.5 text-xs font-bold bg-orange-600/60 border border-orange-500/50 rounded-lg active:bg-orange-700/60">
+                            ⚔️ 방어막 부수기
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              const r = await stealCookies(userId.current, entry.user_id)
+                              if (r.success && r.amount) {
+                                cookiesRef.current += r.amount
+                                setCookies(cookiesRef.current)
+                                setAttackMsg(`💰 ${entry.nickname}에게서 ${formatNumber(r.amount)} 쿠키 훔침!`)
+                                fetchRanking().then(setRanking)
+                                fetchStealLog(userId.current).then(setStealLog)
+                              } else {
+                                const msgs: Record<string, string> = {
+                                  daily_limit: '오늘 훔칠 수 있는 한도 초과!',
+                                  empty: '상대방 쿠키가 없음',
+                                  shields_up: '아직 방어막이 있음',
+                                }
+                                setAttackMsg(msgs[r.reason ?? ''] ?? '훔치기 실패')
+                              }
+                              setTimeout(() => setAttackMsg(''), 3000)
+                            }}
+                            className="flex-1 py-1.5 text-xs font-bold bg-red-600/60 border border-red-500/50 rounded-lg active:bg-red-700/60">
+                            💰 쿠키 훔치기{revenge ? ` (×${revenge})` : ''}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )
               })}
+
+            {/* 공격 기록 */}
+            {stealLog.length > 0 && (
+              <div className="mt-2">
+                <div className={`${skin.theme.subtext} text-xs px-1 pb-1 font-bold`}>⚔️ 전투 기록</div>
+                {stealLog.slice(0, 10).map(log => {
+                  const iAttacked = log.attacker_id === userId.current
+                  return (
+                    <div key={log.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border mb-1 text-xs ${iAttacked ? 'bg-red-500/10 border-red-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                      <span>{iAttacked ? '💰' : '😱'}</span>
+                      <span className={iAttacked ? 'text-red-300' : 'text-blue-300'}>
+                        {iAttacked
+                          ? `${log.defender_nickname}에게 ${formatNumber(log.amount)} 훔침`
+                          : `${log.attacker_nickname}이 ${formatNumber(log.amount)} 훔쳐감`}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 

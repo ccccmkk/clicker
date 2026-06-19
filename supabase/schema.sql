@@ -21,5 +21,8 @@ alter table game_state add column if not exists click_upgrades jsonb default '{}
 -- click_upgrades 컬럼 추가 (없을 경우)
 alter table game_state add column if not exists click_upgrades jsonb default '{}'::jsonb;
 
+-- cps_estimate 컬럼 추가
+alter table game_state add column if not exists cps_estimate bigint default 0;
+
 -- Realtime 활성화
 alter publication supabase_realtime add table game_state;
