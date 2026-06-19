@@ -16,6 +16,7 @@ export type GameState = {
   upgrades: Record<string, number>
   click_upgrades: Record<string, number>
   cps_estimate?: number
+  click_power?: number
   defense_power?: number
   revenge_map?: Record<string, number>
 }
@@ -27,6 +28,7 @@ export type RankEntry = {
   total_cookies: number
   total_clicks: number
   cps_estimate: number
+  click_power: number
   defense_power: number
 }
 
@@ -88,6 +90,7 @@ export async function saveGameState(state: GameState): Promise<'remote' | 'local
         upgrades: state.upgrades,
         click_upgrades: state.click_upgrades,
         cps_estimate: Math.floor(state.cps_estimate ?? 0),
+        click_power: Math.floor(state.click_power ?? 1),
         defense_power: state.defense_power ?? 0,
         updated_at: new Date().toISOString(),
       },
@@ -103,7 +106,7 @@ export async function fetchRanking(): Promise<RankEntry[]> {
   try {
     const { data, error } = await supabase
       .from('game_state')
-      .select('user_id, nickname, cookies, total_cookies, total_clicks, cps_estimate, defense_power')
+      .select('user_id, nickname, cookies, total_cookies, total_clicks, cps_estimate, click_power, defense_power')
       .order('total_cookies', { ascending: false })
       .limit(20)
     if (error || !data) return []

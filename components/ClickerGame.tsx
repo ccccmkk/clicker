@@ -127,6 +127,7 @@ export default function ClickerGame() {
         total_clicks: totalClicksRef.current, upgrades: upgradesRef.current,
         click_upgrades: clickUpgradesRef.current,
         cps_estimate: Math.floor(getTotalCps(upgradesRef.current)),
+        click_power: Math.floor(getClickPower(clickUpgradesRef.current)),
         defense_power: defenseRef.current,
       })
       setSaveStatus(result)
@@ -508,7 +509,7 @@ export default function ClickerGame() {
                         <div className={`${skin.theme.subtext} text-xs flex gap-2 flex-wrap`}>
                           <span>🍪 {formatNumber(entry.total_cookies)}</span>
                           <span>⚡ {formatNumber(entry.cps_estimate)}/초</span>
-                          <span>👆 {formatNumber(entry.total_clicks)}회</span>
+                          <span>👆 +{formatNumber(entry.click_power ?? 1)}/클릭</span>
                           <span>{shielded ? `🛡️ ${formatNumber(entry.defense_power)}` : '🔓 무방비'}</span>
                         </div>
                       </div>
