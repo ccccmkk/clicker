@@ -40,6 +40,7 @@ export default function ClickerGame() {
   const [defensePower, setDefensePower] = useState(0)
   const [stealLog, setStealLog] = useState<StealLogEntry[]>([])
   const [attackMsg, setAttackMsg] = useState<string>('')
+  const [attackMsgTarget, setAttackMsgTarget] = useState<string>('')
   const [revengeMap, setRevengeMap] = useState<Record<string, number>>({})
 
   const cookiesRef = useRef(0)
@@ -470,12 +471,6 @@ export default function ClickerGame() {
               </div>
             </div>
 
-            {attackMsg && (
-              <div className="px-3 py-2 rounded-xl bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs text-center">
-                {attackMsg}
-              </div>
-            )}
-
             <div className={`${skin.theme.subtext} text-xs px-1 pb-0.5 flex items-center gap-1.5`}>
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />실시간 랭킹
             </div>
@@ -509,6 +504,13 @@ export default function ClickerGame() {
                         </div>
                       </div>
                     </div>
+                    {attackMsgTarget === entry.user_id && attackMsg && (
+                      <div className="px-3 pb-1">
+                        <div className="px-2 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs text-center">
+                          {attackMsg}
+                        </div>
+                      </div>
+                    )}
                     {!isMe && (
                       <div className="flex gap-1.5 px-3 pb-2">
                         {shielded ? (
@@ -517,9 +519,10 @@ export default function ClickerGame() {
                               const r = await breakShield(userId.current, entry.user_id)
                               if (r.success) {
                                 setAttackMsg(`⚔️ 방어막 파괴! 남은 방어막: ${formatNumber(r.defense)}`)
-                                fetchRanking().then(setRanking)
+                                setAttackMsgTarget(entry.user_id)
+                                setRanking(prev => prev.map(e => e.user_id === entry.user_id ? { ...e, defense_power: r.defense } : e))
                               }
-                              setTimeout(() => setAttackMsg(''), 2000)
+                              setTimeout(() => { setAttackMsg(''); setAttackMsgTarget('') }, 2000)
                             }}
                             className="flex-1 py-1.5 text-xs font-bold bg-orange-600/60 border border-orange-500/50 rounded-lg active:bg-orange-700/60">
                             ⚔️ 방어막 부수기
@@ -531,8 +534,9 @@ export default function ClickerGame() {
                               if (r.success && r.amount) {
                                 cookiesRef.current += r.amount
                                 setCookies(cookiesRef.current)
-                                setAttackMsg(`💰 ${entry.nickname}에게서 ${formatNumber(r.amount)} 쿠키 훔침!`)
-                                fetchRanking().then(setRanking)
+                                setAttackMsg(`💰 ${formatNumber(r.amount)} 쿠키 훔침!`)
+                                setAttackMsgTarget(entry.user_id)
+                                setRanking(prev => prev.map(e => e.user_id === entry.user_id ? { ...e, cookies: Math.max(0, (e.cookies ?? 0) - r.amount!) } : e))
                                 fetchStealLog(userId.current).then(setStealLog)
                               } else {
                                 const msgs: Record<string, string> = {
@@ -541,8 +545,9 @@ export default function ClickerGame() {
                                   shields_up: '아직 방어막이 있음',
                                 }
                                 setAttackMsg(msgs[r.reason ?? ''] ?? '훔치기 실패')
+                                setAttackMsgTarget(entry.user_id)
                               }
-                              setTimeout(() => setAttackMsg(''), 3000)
+                              setTimeout(() => { setAttackMsg(''); setAttackMsgTarget('') }, 3000)
                             }}
                             className="flex-1 py-1.5 text-xs font-bold bg-red-600/60 border border-red-500/50 rounded-lg active:bg-red-700/60">
                             💰 쿠키 훔치기{revenge ? ` (×${revenge})` : ''}

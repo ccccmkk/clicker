@@ -23,6 +23,7 @@ export type GameState = {
 export type RankEntry = {
   user_id: string
   nickname: string
+  cookies: number
   total_cookies: number
   total_clicks: number
   cps_estimate: number
@@ -102,7 +103,7 @@ export async function fetchRanking(): Promise<RankEntry[]> {
   try {
     const { data, error } = await supabase
       .from('game_state')
-      .select('user_id, nickname, total_cookies, total_clicks, cps_estimate, defense_power')
+      .select('user_id, nickname, cookies, total_cookies, total_clicks, cps_estimate, defense_power')
       .order('total_cookies', { ascending: false })
       .limit(20)
     if (error || !data) return []
