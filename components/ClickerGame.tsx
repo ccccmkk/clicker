@@ -27,6 +27,8 @@ export default function ClickerGame() {
   const [buildings, setBuildings] = useState<Building[]>([])
   const [cookieScale, setCookieScale] = useState(1)
   const [loaded, setLoaded] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'remote' | 'local'>('idle')
+  const [loadSource, setLoadSource] = useState<'remote' | 'local' | 'none'>('none')
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'auto' | 'click' | 'rank' | 'skin'>('auto')
   const [nickname, setNickname] = useState('')
@@ -68,9 +70,10 @@ export default function ClickerGame() {
     if (!savedNick) { setShowNicknameModal(true) }
     else { nicknameRef.current = savedNick; setNickname(savedNick) }
 
-    const timeout = setTimeout(() => setLoaded(true), 4000)
-    loadGameState(userId.current).then(state => {
+    const timeout = setTimeout(() => setLoaded(true), 5000)
+    loadGameState(userId.current).then(({ state, source }) => {
       clearTimeout(timeout)
+      setLoadSource(source)
       if (state) {
         cookiesRef.current = state.cookies
         totalCookiesRef.current = state.total_cookies
@@ -104,18 +107,19 @@ export default function ClickerGame() {
     return () => clearInterval(interval)
   }, [loaded])
 
-  // Auto-save
+  // Auto-save (5초마다 - 로컬 항상 저장, 원격 성공 시 표시)
   useEffect(() => {
     if (!loaded) return
     const interval = setInterval(async () => {
-      setSaving(true)
-      await saveGameState({
+      setSaveStatus('saving')
+      const result = await saveGameState({
         user_id: userId.current, nickname: nicknameRef.current,
         cookies: cookiesRef.current, total_cookies: totalCookiesRef.current,
         total_clicks: totalClicksRef.current, upgrades: upgradesRef.current,
         click_upgrades: clickUpgradesRef.current,
       })
-      setSaving(false)
+      setSaveStatus(result)
+      setTimeout(() => setSaveStatus('idle'), 2000)
     }, 5000)
     return () => clearInterval(interval)
   }, [loaded])
@@ -243,8 +247,9 @@ export default function ClickerGame() {
   )
 
   if (!loaded) return (
-    <div className={`flex items-center justify-center h-screen ${skin.theme.bg} ${skin.theme.text}`}>
+    <div className={`flex flex-col items-center justify-center h-screen gap-3 ${skin.theme.bg} ${skin.theme.text}`}>
       <div className="text-2xl animate-pulse">{skin.emoji} 로딩중...</div>
+      <div className={`text-xs ${skin.theme.subtext}`}>서버에서 데이터 불러오는 중...</div>
     </div>
   )
 
@@ -321,7 +326,12 @@ export default function ClickerGame() {
           </button>
         </div>
 
-        {saving && <div className={`absolute bottom-1 right-2 ${skin.theme.subtext} text-xs animate-pulse`}>💾</div>}
+        <div className={`absolute bottom-1 right-2 text-xs flex items-center gap-1`}>
+          {saveStatus === 'saving' && <span className={`${skin.theme.subtext} animate-pulse`}>💾 저장중...</span>}
+          {saveStatus === 'remote' && <span className="text-green-400">☁️ 저장됨</span>}
+          {saveStatus === 'local' && <span className="text-yellow-500">⚠️ 로컬저장 (서버연결안됨)</span>}
+          {loadSource === 'local' && saveStatus === 'idle' && <span className="text-yellow-600 text-xs">⚠️ 오프라인</span>}
+        </div>
       </div>
 
       {/* 하단 패널 */}

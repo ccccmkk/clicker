@@ -17,3 +17,9 @@ create policy "Anyone can read/write game state" on game_state
 
 -- click_upgrades 컬럼 추가 (이미 테이블 있는 경우)
 alter table game_state add column if not exists click_upgrades jsonb default '{}'::jsonb;
+
+-- click_upgrades 컬럼 추가 (없을 경우)
+alter table game_state add column if not exists click_upgrades jsonb default '{}'::jsonb;
+
+-- Realtime 활성화
+alter publication supabase_realtime add table game_state;
