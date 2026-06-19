@@ -247,7 +247,7 @@ export default function ClickerGame() {
   )
 
   return (
-    <div className={`flex flex-col h-screen ${skin.theme.bg} text-white overflow-hidden select-none`}>
+    <div className={`flex flex-col h-screen ${skin.theme.bg} ${skin.theme.text} overflow-hidden select-none`}>
 
       {/* 쿠키 영역 */}
       <div className="relative flex-none" style={{ height: '50vh' }}>
@@ -337,7 +337,7 @@ export default function ClickerGame() {
         <div className={`flex border-b ${skin.theme.border} flex-shrink-0 text-xs`}>
           {(['auto', 'click', 'rank', 'stat', 'skin'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 font-bold transition-colors ${activeTab === tab ? 'bg-white/10 text-white' : skin.theme.subtext}`}>
+              className={`flex-1 py-2.5 font-bold transition-colors ${activeTab === tab ? `bg-white/10 ${skin.theme.text}` : skin.theme.subtext}`}>
               {tab === 'auto' ? '🏭 자동'
                 : tab === 'click' ? '👆 클릭'
                 : tab === 'rank' ? `🏆${myRank > 0 ? ` #${myRank}` : ''}`
@@ -365,8 +365,8 @@ export default function ClickerGame() {
                   <span className="text-3xl relative z-10">{upgrade.icon}</span>
                   <div className="flex-1 min-w-0 relative z-10">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-white">{upgrade.name}</span>
-                      {owned > 0 && <span className="bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">×{owned}</span>}
+                      <span className={`font-bold text-sm ${skin.theme.text}`}>{upgrade.name}</span>
+                      {owned > 0 && <span className={`bg-white/20 ${skin.theme.text} text-xs px-1.5 py-0.5 rounded-full`}>×{owned}</span>}
                     </div>
                     {/* 보유 건물 미니 이모지 시각화 */}
                     {displayIcons > 0 && (
@@ -406,8 +406,8 @@ export default function ClickerGame() {
                   <span className="text-3xl relative z-10">{upgrade.icon}</span>
                   <div className="flex-1 min-w-0 relative z-10">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-white">{upgrade.name}</span>
-                      {owned > 0 && <span className="bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">×{owned}</span>}
+                      <span className={`font-bold text-sm ${skin.theme.text}`}>{upgrade.name}</span>
+                      {owned > 0 && <span className={`bg-white/20 ${skin.theme.text} text-xs px-1.5 py-0.5 rounded-full`}>×{owned}</span>}
                     </div>
                     <div className={`${skin.theme.subtext} text-xs flex gap-2`}>
                       <span>{upgrade.description}</span>
@@ -439,7 +439,7 @@ export default function ClickerGame() {
                       {medal ?? <span className={`${skin.theme.subtext} text-xs`}>{i + 1}</span>}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className={`font-medium text-sm truncate ${isMe ? 'text-white' : 'text-white/80'}`}>
+                      <div className={`font-medium text-sm truncate ${isMe ? skin.theme.text : skin.theme.subtext}`}>
                         {entry.nickname || '익명의 제빵사'}{isMe && <span className={`${skin.theme.subtext} text-xs ml-1`}>(나)</span>}
                       </div>
                       <div className={`${skin.theme.subtext} text-xs flex gap-2`}>
@@ -466,7 +466,7 @@ export default function ClickerGame() {
             ].map(item => (
               <div key={item.label} className={`flex items-center justify-between p-3 rounded-xl border bg-white/5 border-white/10`}>
                 <div>
-                  <div className="text-sm text-white font-medium">{item.label}</div>
+                  <div className={`text-sm ${skin.theme.text} font-medium`}>{item.label}</div>
                   <div className={`text-xs ${skin.theme.subtext}`}>{item.sub}</div>
                 </div>
                 <div className={`text-sm font-bold ${skin.theme.text}`}>{item.value}</div>
@@ -481,7 +481,7 @@ export default function ClickerGame() {
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{u.icon}</span>
                     <div>
-                      <div className="text-sm text-white">{u.name} ×{owned}</div>
+                      <div className={`text-sm ${skin.theme.text}`}>{u.name} ×{owned}</div>
                     </div>
                   </div>
                   <div className={`text-sm font-bold text-green-400`}>+{formatNumber(thisCps)}/초</div>
@@ -509,7 +509,7 @@ export default function ClickerGame() {
                       className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${active ? 'border-white/60 bg-white/20' : unlocked ? `${skin.theme.btn}` : 'bg-white/5 border-white/10 opacity-50'}`}>
                       <span className={`w-10 h-10 rounded-full bg-gradient-to-br ${s.grad} flex items-center justify-center text-xl flex-shrink-0`}>{s.emoji}</span>
                       <div className="flex-1">
-                        <div className="font-bold text-sm text-white flex items-center gap-2">
+                        <div className={`font-bold text-sm ${skin.theme.text} flex items-center gap-2`}>
                           {s.name}
                           {active && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">사용중</span>}
                           {!unlocked && <span className="text-xs">🔒</span>}
@@ -536,7 +536,7 @@ export default function ClickerGame() {
                       className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${active ? 'border-white/60 bg-white/20' : unlocked ? `${skin.theme.btn}` : 'bg-white/5 border-white/10 opacity-50'}`}>
                       <span className="text-3xl flex-shrink-0">{s.sceneEmoji}</span>
                       <div className="flex-1">
-                        <div className="font-bold text-sm text-white flex items-center gap-2">
+                        <div className={`font-bold text-sm ${skin.theme.text} flex items-center gap-2`}>
                           {s.name}
                           {active && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">사용중</span>}
                           {!unlocked && <span className="text-xs">🔒</span>}
