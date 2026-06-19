@@ -56,10 +56,19 @@ export function formatNumber(n: number): string {
   return Math.floor(n).toLocaleString()
 }
 
-export type Skin = {
+export type CookieSkin = {
   id: string
   name: string
   emoji: string
+  grad: string
+  unlockAt: number
+}
+
+export type BgTheme = {
+  id: string
+  name: string
+  sceneEmoji: string
+  desc: string
   theme: {
     bg: string
     panel: string
@@ -68,35 +77,52 @@ export type Skin = {
     subtext: string
     btn: string
     btnHover: string
-    cookieGrad: string
   }
   unlockAt: number
 }
 
-export const SKINS: Skin[] = [
+export const COOKIE_SKINS: CookieSkin[] = [
+  { id: 'cookie',  name: '쿠키',      emoji: '🍪', grad: 'from-amber-400 to-amber-700',   unlockAt: 0 },
+  { id: 'donut',   name: '도넛',      emoji: '🍩', grad: 'from-pink-400 to-rose-600',     unlockAt: 1000 },
+  { id: 'moon',    name: '달빛 쿠키', emoji: '🌕', grad: 'from-indigo-400 to-violet-700', unlockAt: 50000 },
+  { id: 'cake',    name: '케이크',    emoji: '🎂', grad: 'from-green-400 to-emerald-700', unlockAt: 500000 },
+  { id: 'earth',   name: '지구 쿠키', emoji: '🌍', grad: 'from-cyan-400 to-blue-700',     unlockAt: 5000000 },
+  { id: 'gem',     name: '보석 쿠키', emoji: '💎', grad: 'from-violet-400 to-fuchsia-700',unlockAt: 50000000 },
+]
+
+export const BG_THEMES: BgTheme[] = [
   {
-    id: 'classic', name: '기본 쿠키', emoji: '🍪',
-    theme: { bg: 'bg-amber-950', panel: 'bg-amber-900/70', border: 'border-amber-800', text: 'text-amber-300', subtext: 'text-amber-500', btn: 'bg-amber-800 border-amber-600', btnHover: 'active:bg-amber-700', cookieGrad: 'from-amber-400 to-amber-700' },
+    id: 'home', name: '아늑한 집', sceneEmoji: '🏠', desc: '따뜻한 집에서 쿠키를 구워요',
+    theme: { bg: 'bg-amber-950', panel: 'bg-amber-900/70', border: 'border-amber-800', text: 'text-amber-200', subtext: 'text-amber-500', btn: 'bg-amber-800 border-amber-600', btnHover: 'active:bg-amber-700' },
     unlockAt: 0,
   },
   {
-    id: 'donut', name: '도넛', emoji: '🍩',
-    theme: { bg: 'bg-pink-950', panel: 'bg-pink-900/70', border: 'border-pink-800', text: 'text-pink-300', subtext: 'text-pink-500', btn: 'bg-pink-800 border-pink-600', btnHover: 'active:bg-pink-700', cookieGrad: 'from-pink-400 to-rose-700' },
-    unlockAt: 1000,
+    id: 'bakery', name: '빵집', sceneEmoji: '🥐', desc: '동네 빵집에서 대량 생산!',
+    theme: { bg: 'bg-orange-950', panel: 'bg-orange-900/70', border: 'border-orange-800', text: 'text-orange-200', subtext: 'text-orange-500', btn: 'bg-orange-800 border-orange-600', btnHover: 'active:bg-orange-700' },
+    unlockAt: 5000,
   },
   {
-    id: 'moon', name: '달빛 쿠키', emoji: '🌕',
-    theme: { bg: 'bg-indigo-950', panel: 'bg-indigo-900/70', border: 'border-indigo-800', text: 'text-indigo-300', subtext: 'text-indigo-400', btn: 'bg-indigo-800 border-indigo-600', btnHover: 'active:bg-indigo-700', cookieGrad: 'from-indigo-400 to-violet-700' },
-    unlockAt: 50000,
+    id: 'field', name: '쿠키 밀밭', sceneEmoji: '🌾', desc: '광활한 밀밭에서 재료 직송',
+    theme: { bg: 'bg-green-950', panel: 'bg-green-900/70', border: 'border-green-800', text: 'text-green-200', subtext: 'text-green-500', btn: 'bg-green-800 border-green-600', btnHover: 'active:bg-green-700' },
+    unlockAt: 100000,
   },
   {
-    id: 'cake', name: '케이크', emoji: '🎂',
-    theme: { bg: 'bg-green-950', panel: 'bg-green-900/70', border: 'border-green-800', text: 'text-green-300', subtext: 'text-green-500', btn: 'bg-green-800 border-green-600', btnHover: 'active:bg-green-700', cookieGrad: 'from-green-400 to-emerald-700' },
-    unlockAt: 500000,
+    id: 'factory', name: '쿠키 공장', sceneEmoji: '🏭', desc: '자동화 공장에서 무한 생산',
+    theme: { bg: 'bg-slate-950', panel: 'bg-slate-900/70', border: 'border-slate-700', text: 'text-slate-200', subtext: 'text-slate-400', btn: 'bg-slate-800 border-slate-600', btnHover: 'active:bg-slate-700' },
+    unlockAt: 2000000,
   },
   {
-    id: 'earth', name: '지구 쿠키', emoji: '🌍',
-    theme: { bg: 'bg-slate-950', panel: 'bg-slate-900/70', border: 'border-slate-700', text: 'text-cyan-300', subtext: 'text-slate-400', btn: 'bg-slate-800 border-slate-600', btnHover: 'active:bg-slate-700', cookieGrad: 'from-cyan-400 to-blue-700' },
-    unlockAt: 5000000,
+    id: 'space', name: '우주 빵집', sceneEmoji: '🌌', desc: '은하계를 가득 채운 쿠키',
+    theme: { bg: 'bg-indigo-950', panel: 'bg-indigo-900/70', border: 'border-indigo-800', text: 'text-indigo-200', subtext: 'text-indigo-400', btn: 'bg-indigo-800 border-indigo-600', btnHover: 'active:bg-indigo-700' },
+    unlockAt: 20000000,
   },
 ]
+
+// 하위 호환용 (ClickerGame에서 theme 접근)
+export type Skin = BgTheme & { emoji: string; cookieGrad: string }
+export const SKINS: Skin[] = BG_THEMES.map(b => ({
+  ...b,
+  emoji: COOKIE_SKINS[0].emoji,
+  cookieGrad: COOKIE_SKINS[0].grad,
+  theme: { ...b.theme, cookieGrad: COOKIE_SKINS[0].grad },
+}))

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { loadGameState, saveGameState, fetchRanking, supabase, type RankEntry } from '@/lib/supabase'
-import { UPGRADES, CLICK_UPGRADES, SKINS, getCost, getTotalCps, getClickPower, formatNumber, type Skin } from '@/lib/gameLogic'
+import { UPGRADES, CLICK_UPGRADES, COOKIE_SKINS, BG_THEMES, getCost, getTotalCps, getClickPower, formatNumber } from '@/lib/gameLogic'
 
 type FloatingText = { id: number; x: number; y: number; text: string; color: string }
 type GoldenCookie = { id: number; x: number; y: number }
@@ -14,7 +14,8 @@ function getUserId(): string {
   return id
 }
 function getSavedNickname() { return typeof window !== 'undefined' ? localStorage.getItem('cookie_nickname') || '' : '' }
-function getSavedSkin() { return typeof window !== 'undefined' ? localStorage.getItem('cookie_skin') || 'classic' : 'classic' }
+function getSavedCookieSkin() { return typeof window !== 'undefined' ? localStorage.getItem('cookie_skin') || 'cookie' : 'cookie' }
+function getSavedBgTheme() { return typeof window !== 'undefined' ? localStorage.getItem('cookie_bg') || 'home' : 'home' }
 
 export default function ClickerGame() {
   const [cookies, setCookies] = useState(0)
@@ -34,7 +35,8 @@ export default function ClickerGame() {
   const [editingNick, setEditingNick] = useState(false)
   const [ranking, setRanking] = useState<RankEntry[]>([])
   const [goldenCookie, setGoldenCookie] = useState<GoldenCookie | null>(null)
-  const [activeSkinId, setActiveSkinId] = useState('classic')
+  const [activeCookieSkinId, setActiveCookieSkinId] = useState('cookie')
+  const [activeBgThemeId, setActiveBgThemeId] = useState('home')
 
   const cookiesRef = useRef(0)
   const totalCookiesRef = useRef(0)
@@ -46,11 +48,14 @@ export default function ClickerGame() {
   const goldenId = useRef(0)
   const userId = useRef('')
 
-  const skin: Skin = SKINS.find(s => s.id === activeSkinId) ?? SKINS[0]
+  const cookieSkin = COOKIE_SKINS.find(s => s.id === activeCookieSkinId) ?? COOKIE_SKINS[0]
+  const bgTheme = BG_THEMES.find(s => s.id === activeBgThemeId) ?? BG_THEMES[0]
+  const skin = { ...bgTheme, emoji: cookieSkin.emoji, theme: { ...bgTheme.theme, cookieGrad: cookieSkin.grad } }
 
   useEffect(() => {
     userId.current = getUserId()
-    setActiveSkinId(getSavedSkin())
+    setActiveCookieSkinId(getSavedCookieSkin())
+    setActiveBgThemeId(getSavedBgTheme())
     const savedNick = getSavedNickname()
     if (!savedNick) { setShowNicknameModal(true) }
     else { nicknameRef.current = savedNick; setNickname(savedNick) }
@@ -204,14 +209,18 @@ export default function ClickerGame() {
     })
   }, [nicknameInput])
 
-  const selectSkin = useCallback((id: string) => {
-    setActiveSkinId(id); localStorage.setItem('cookie_skin', id)
+  const selectCookieSkin = useCallback((id: string) => {
+    setActiveCookieSkinId(id); localStorage.setItem('cookie_skin', id)
+  }, [])
+  const selectBgTheme = useCallback((id: string) => {
+    setActiveBgThemeId(id); localStorage.setItem('cookie_bg', id)
   }, [])
 
   const cps = getTotalCps(upgradesRef.current)
   const clickPower = getClickPower(clickUpgradesRef.current)
   const myRank = ranking.findIndex(r => r.user_id === userId.current) + 1
-  const unlockedSkins = SKINS.filter(s => totalCookies >= s.unlockAt)
+  const unlockedCookieSkins = COOKIE_SKINS.filter(s => totalCookies >= s.unlockAt)
+  const unlockedBgThemes = BG_THEMES.filter(s => totalCookies >= s.unlockAt)
   const now = Date.now()
 
   if (showNicknameModal) return (
@@ -309,7 +318,7 @@ export default function ClickerGame() {
         <div className="absolute inset-0 flex items-center justify-center z-20">
           <button onClick={handleClick} onTouchStart={e => { e.preventDefault(); handleClick(e) }}
             style={{ transform: `scale(${cookieScale})`, transition: 'transform 0.08s' }}
-            className={`relative w-36 h-36 rounded-full bg-gradient-to-br ${skin.theme.cookieGrad} shadow-2xl active:brightness-90 border-4 border-white/20 flex items-center justify-center touch-none`}>
+            className={`relative w-36 h-36 rounded-full bg-gradient-to-br ${cookieSkin.grad} shadow-2xl active:brightness-90 border-4 border-white/20 flex items-center justify-center touch-none`}>
             <span className="text-7xl">{skin.emoji}</span>
           </button>
         </div>
@@ -332,7 +341,7 @@ export default function ClickerGame() {
               {tab === 'auto' ? '🏭 자동'
                 : tab === 'click' ? '👆 클릭'
                 : tab === 'rank' ? `🏆${myRank > 0 ? ` #${myRank}` : ''}`
-                : `🎨 ${unlockedSkins.length}/${SKINS.length}`}
+                : `🎨 ${unlockedCookieSkins.length + unlockedBgThemes.length}/${COOKIE_SKINS.length + BG_THEMES.length}`}
             </button>
           ))}
         </div>
@@ -445,28 +454,60 @@ export default function ClickerGame() {
 
         {/* 스킨 */}
         {activeTab === 'skin' && (
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            <div className={`${skin.theme.subtext} text-xs px-1 pb-1`}>총 생산량으로 해금</div>
-            {SKINS.map(s => {
-              const unlocked = totalCookies >= s.unlockAt
-              const active = activeSkinId === s.id
-              return (
-                <button key={s.id} onClick={() => unlocked && selectSkin(s.id)} disabled={!unlocked}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${active ? 'border-white/60 bg-white/20' : unlocked ? `${skin.theme.btn}` : 'bg-white/5 border-white/10 opacity-50'}`}>
-                  <span className="text-4xl">{s.emoji}</span>
-                  <div className="flex-1">
-                    <div className="font-bold text-sm text-white flex items-center gap-2">
-                      {s.name}
-                      {active && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">사용중</span>}
-                      {!unlocked && <span className={`text-xs ${skin.theme.subtext}`}>🔒</span>}
-                    </div>
-                    <div className={`${skin.theme.subtext} text-xs`}>
-                      {s.unlockAt === 0 ? '기본 스킨' : `🍪 ${formatNumber(s.unlockAt)} 달성 시 해금`}
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {/* 쿠키 스킨 */}
+            <div>
+              <div className={`${skin.theme.subtext} text-xs px-1 pb-1.5 font-bold`}>🍪 쿠키 스킨</div>
+              <div className="space-y-1.5">
+                {COOKIE_SKINS.map(s => {
+                  const unlocked = totalCookies >= s.unlockAt
+                  const active = activeCookieSkinId === s.id
+                  return (
+                    <button key={s.id} onClick={() => unlocked && selectCookieSkin(s.id)} disabled={!unlocked}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${active ? 'border-white/60 bg-white/20' : unlocked ? `${skin.theme.btn}` : 'bg-white/5 border-white/10 opacity-50'}`}>
+                      <span className={`w-10 h-10 rounded-full bg-gradient-to-br ${s.grad} flex items-center justify-center text-xl flex-shrink-0`}>{s.emoji}</span>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-white flex items-center gap-2">
+                          {s.name}
+                          {active && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">사용중</span>}
+                          {!unlocked && <span className="text-xs">🔒</span>}
+                        </div>
+                        <div className={`${skin.theme.subtext} text-xs`}>
+                          {s.unlockAt === 0 ? '기본 스킨' : `🍪 ${formatNumber(s.unlockAt)} 달성 시 해금`}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 배경 테마 */}
+            <div>
+              <div className={`${skin.theme.subtext} text-xs px-1 pb-1.5 font-bold`}>🏠 배경 테마</div>
+              <div className="space-y-1.5">
+                {BG_THEMES.map(s => {
+                  const unlocked = totalCookies >= s.unlockAt
+                  const active = activeBgThemeId === s.id
+                  return (
+                    <button key={s.id} onClick={() => unlocked && selectBgTheme(s.id)} disabled={!unlocked}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${active ? 'border-white/60 bg-white/20' : unlocked ? `${skin.theme.btn}` : 'bg-white/5 border-white/10 opacity-50'}`}>
+                      <span className="text-3xl flex-shrink-0">{s.sceneEmoji}</span>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-white flex items-center gap-2">
+                          {s.name}
+                          {active && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">사용중</span>}
+                          {!unlocked && <span className="text-xs">🔒</span>}
+                        </div>
+                        <div className={`${skin.theme.subtext} text-xs`}>
+                          {s.desc} {s.unlockAt > 0 && `· 🍪 ${formatNumber(s.unlockAt)} 해금`}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
