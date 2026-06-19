@@ -250,7 +250,15 @@ export default function ClickerGame() {
     <div className={`flex flex-col h-screen ${skin.theme.bg} ${skin.theme.text} overflow-hidden select-none`}>
 
       {/* 쿠키 영역 */}
-      <div className="relative flex-none" style={{ height: '50vh' }}>
+      <div className="relative flex-none" style={{ height: '50vh', background: bgTheme.bgGradient }}>
+
+        {/* 배경 장식 */}
+        {bgTheme.deco.map((d, i) => (
+          <span key={i} className="absolute pointer-events-none select-none"
+            style={{ left: `${d.x}%`, top: `${d.y}%`, fontSize: `${d.size}rem`, opacity: d.opacity, transform: `translate(-50%,-50%) rotate(${d.rotate ?? 0}deg)` }}>
+            {d.emoji}
+          </span>
+        ))}
 
         {/* 커서: 쿠키 주변 원형 궤도 */}
         {(() => {

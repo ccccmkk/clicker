@@ -64,11 +64,15 @@ export type CookieSkin = {
   unlockAt: number
 }
 
+export type DecoItem = { emoji: string; x: number; y: number; size: number; opacity: number; rotate?: number }
+
 export type BgTheme = {
   id: string
   name: string
   sceneEmoji: string
   desc: string
+  bgGradient: string   // inline CSS gradient for the cookie area background
+  deco: DecoItem[]     // decorative elements scattered in cookie area
   theme: {
     bg: string
     panel: string
@@ -93,27 +97,85 @@ export const COOKIE_SKINS: CookieSkin[] = [
 export const BG_THEMES: BgTheme[] = [
   {
     id: 'home', name: '아늑한 집', sceneEmoji: '🏠', desc: '따뜻한 집에서 쿠키를 구워요',
-    theme: { bg: 'bg-amber-950', panel: 'bg-amber-900/70', border: 'border-amber-800', text: 'text-amber-200', subtext: 'text-amber-500', btn: 'bg-amber-800 border-amber-600', btnHover: 'active:bg-amber-700' },
+    bgGradient: 'linear-gradient(180deg, #1a0800 0%, #3b1500 40%, #5c2d0a 70%, #3b1500 100%)',
+    deco: [
+      { emoji: '🕯️', x: 8,  y: 20, size: 1.8, opacity: 0.6 },
+      { emoji: '🕯️', x: 88, y: 25, size: 1.5, opacity: 0.5 },
+      { emoji: '☕', x: 12, y: 72, size: 1.6, opacity: 0.5 },
+      { emoji: '📚', x: 82, y: 68, size: 1.5, opacity: 0.4 },
+      { emoji: '🪑', x: 5,  y: 55, size: 2.0, opacity: 0.3 },
+      { emoji: '🧸', x: 85, y: 55, size: 1.6, opacity: 0.35 },
+      { emoji: '🖼️', x: 50, y: 10, size: 2.0, opacity: 0.25 },
+    ],
+    theme: { bg: 'bg-amber-950', panel: 'bg-amber-900/80', border: 'border-amber-800', text: 'text-amber-200', subtext: 'text-amber-500', btn: 'bg-amber-800 border-amber-600', btnHover: 'active:bg-amber-700' },
     unlockAt: 0,
   },
   {
-    id: 'bakery', name: '빵집', sceneEmoji: '🥐', desc: '동네 빵집에서 대량 생산!',
-    theme: { bg: 'bg-orange-950', panel: 'bg-orange-900/70', border: 'border-orange-800', text: 'text-orange-200', subtext: 'text-orange-500', btn: 'bg-orange-800 border-orange-600', btnHover: 'active:bg-orange-700' },
+    id: 'bakery', name: '동네 빵집', sceneEmoji: '🥐', desc: '따끈한 빵 냄새가 솔솔~',
+    bgGradient: 'linear-gradient(180deg, #3d1a00 0%, #7a3300 30%, #b85c1a 60%, #7a3300 100%)',
+    deco: [
+      { emoji: '🍞', x: 7,  y: 18, size: 2.2, opacity: 0.55 },
+      { emoji: '🥐', x: 85, y: 15, size: 2.0, opacity: 0.55 },
+      { emoji: '🧁', x: 10, y: 65, size: 2.0, opacity: 0.5 },
+      { emoji: '🥖', x: 82, y: 62, size: 2.2, opacity: 0.5 },
+      { emoji: '🎂', x: 50, y: 8,  size: 1.8, opacity: 0.3 },
+      { emoji: '🍰', x: 20, y: 40, size: 1.5, opacity: 0.3 },
+      { emoji: '💨', x: 60, y: 30, size: 1.4, opacity: 0.25 },
+      { emoji: '🔥', x: 75, y: 40, size: 1.4, opacity: 0.35 },
+    ],
+    theme: { bg: 'bg-orange-950', panel: 'bg-orange-900/80', border: 'border-orange-800', text: 'text-orange-200', subtext: 'text-orange-400', btn: 'bg-orange-900 border-orange-700', btnHover: 'active:bg-orange-800' },
     unlockAt: 30000,
   },
   {
     id: 'field', name: '쿠키 밀밭', sceneEmoji: '🌾', desc: '광활한 밀밭에서 재료 직송',
-    theme: { bg: 'bg-green-950', panel: 'bg-green-900/70', border: 'border-green-800', text: 'text-green-200', subtext: 'text-green-500', btn: 'bg-green-800 border-green-600', btnHover: 'active:bg-green-700' },
+    bgGradient: 'linear-gradient(180deg, #0a1628 0%, #1a4a8a 25%, #4a90d9 45%, #7ab648 65%, #c8a820 85%, #8b6914 100%)',
+    deco: [
+      { emoji: '☀️', x: 80, y: 8,  size: 2.5, opacity: 0.7 },
+      { emoji: '🌾', x: 5,  y: 70, size: 2.2, opacity: 0.6 },
+      { emoji: '🌾', x: 15, y: 75, size: 2.0, opacity: 0.55 },
+      { emoji: '🌾', x: 78, y: 72, size: 2.2, opacity: 0.6 },
+      { emoji: '🌾', x: 88, y: 68, size: 1.8, opacity: 0.5 },
+      { emoji: '🦋', x: 25, y: 30, size: 1.4, opacity: 0.45 },
+      { emoji: '🌻', x: 70, y: 60, size: 1.8, opacity: 0.4 },
+      { emoji: '☁️', x: 15, y: 15, size: 2.0, opacity: 0.35 },
+      { emoji: '☁️', x: 55, y: 18, size: 1.6, opacity: 0.3 },
+    ],
+    theme: { bg: 'bg-green-950', panel: 'bg-green-900/80', border: 'border-green-800', text: 'text-green-200', subtext: 'text-green-400', btn: 'bg-green-900 border-green-700', btnHover: 'active:bg-green-800' },
     unlockAt: 1000000,
   },
   {
     id: 'factory', name: '쿠키 공장', sceneEmoji: '🏭', desc: '자동화 공장에서 무한 생산',
-    theme: { bg: 'bg-slate-950', panel: 'bg-slate-900/70', border: 'border-slate-700', text: 'text-slate-200', subtext: 'text-slate-400', btn: 'bg-slate-800 border-slate-600', btnHover: 'active:bg-slate-700' },
+    bgGradient: 'linear-gradient(180deg, #050508 0%, #0d0d1a 30%, #141428 60%, #1a1a0a 100%)',
+    deco: [
+      { emoji: '⚙️', x: 8,  y: 15, size: 2.5, opacity: 0.45, rotate: 30 },
+      { emoji: '⚙️', x: 82, y: 20, size: 2.0, opacity: 0.4, rotate: -20 },
+      { emoji: '⚙️', x: 5,  y: 60, size: 1.8, opacity: 0.35, rotate: 10 },
+      { emoji: '💨', x: 20, y: 10, size: 1.6, opacity: 0.4 },
+      { emoji: '💨', x: 35, y: 8,  size: 1.4, opacity: 0.35 },
+      { emoji: '💨', x: 60, y: 12, size: 1.6, opacity: 0.4 },
+      { emoji: '🔩', x: 85, y: 65, size: 1.5, opacity: 0.4 },
+      { emoji: '🏗️', x: 75, y: 55, size: 2.0, opacity: 0.3 },
+      { emoji: '📦', x: 10, y: 70, size: 1.8, opacity: 0.35 },
+    ],
+    theme: { bg: 'bg-slate-950', panel: 'bg-slate-900/80', border: 'border-slate-700', text: 'text-slate-200', subtext: 'text-slate-400', btn: 'bg-slate-800 border-slate-600', btnHover: 'active:bg-slate-700' },
     unlockAt: 30000000,
   },
   {
     id: 'space', name: '우주 빵집', sceneEmoji: '🌌', desc: '은하계를 가득 채운 쿠키',
-    theme: { bg: 'bg-indigo-950', panel: 'bg-indigo-900/70', border: 'border-indigo-800', text: 'text-indigo-200', subtext: 'text-indigo-400', btn: 'bg-indigo-800 border-indigo-600', btnHover: 'active:bg-indigo-700' },
+    bgGradient: 'linear-gradient(180deg, #000005 0%, #03001a 30%, #080030 60%, #0d0040 100%)',
+    deco: [
+      { emoji: '⭐', x: 10, y: 8,  size: 1.0, opacity: 0.7 },
+      { emoji: '✨', x: 30, y: 5,  size: 0.9, opacity: 0.6 },
+      { emoji: '⭐', x: 55, y: 10, size: 1.0, opacity: 0.65 },
+      { emoji: '✨', x: 75, y: 6,  size: 0.9, opacity: 0.7 },
+      { emoji: '⭐', x: 90, y: 15, size: 1.0, opacity: 0.6 },
+      { emoji: '🌙', x: 85, y: 10, size: 2.2, opacity: 0.7 },
+      { emoji: '🪐', x: 8,  y: 25, size: 2.0, opacity: 0.55 },
+      { emoji: '🌟', x: 20, y: 55, size: 1.4, opacity: 0.45 },
+      { emoji: '💫', x: 78, y: 60, size: 1.4, opacity: 0.5 },
+      { emoji: '🛸', x: 60, y: 20, size: 1.6, opacity: 0.4 },
+    ],
+    theme: { bg: 'bg-indigo-950', panel: 'bg-indigo-900/80', border: 'border-indigo-800', text: 'text-indigo-200', subtext: 'text-indigo-400', btn: 'bg-indigo-900 border-indigo-700', btnHover: 'active:bg-indigo-800' },
     unlockAt: 500000000,
   },
 ]
