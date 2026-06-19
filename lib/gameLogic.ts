@@ -27,14 +27,14 @@ export const UPGRADES: Upgrade[] = [
   { id: 'temple',  name: '신전',   description: '신의 쿠키 축복',     baseCost: 800000000,  baseCps: 25000, icon: '🛕' },
 ]
 
-// 클릭 강화 업그레이드 - 클릭 노가다 보상 대폭 강화, 비용도 급등
+// 클릭 강화 업그레이드 - 클릭은 보조 수단, 자동 대비 1/10 수준 유지
 export const CLICK_UPGRADES: ClickUpgrade[] = [
-  { id: 'click1', name: '손가락 단련',   description: '클릭 파워 +3',       baseCost: 200,        baseClickPower: 3,     icon: '✊' },
-  { id: 'click2', name: '철권',          description: '클릭 파워 +15',      baseCost: 6000,       baseClickPower: 15,    icon: '🤜' },
-  { id: 'click3', name: '황금 손가락',   description: '클릭 파워 +60',      baseCost: 120000,     baseClickPower: 60,    icon: '👑' },
-  { id: 'click4', name: '클릭 폭탄',     description: '클릭 파워 +300',     baseCost: 2500000,    baseClickPower: 300,   icon: '💥' },
-  { id: 'click5', name: '신의 손길',     description: '클릭 파워 +2000',    baseCost: 60000000,   baseClickPower: 2000,  icon: '⚡' },
-  { id: 'click6', name: '빅뱅 클릭',     description: '클릭 파워 +15000',   baseCost: 1500000000, baseClickPower: 15000, icon: '🌌' },
+  { id: 'click1', name: '손가락 단련',   description: '클릭 파워 +1',      baseCost: 500,        baseClickPower: 1,    icon: '✊' },
+  { id: 'click2', name: '철권',          description: '클릭 파워 +4',      baseCost: 15000,      baseClickPower: 4,    icon: '🤜' },
+  { id: 'click3', name: '황금 손가락',   description: '클릭 파워 +15',     baseCost: 300000,     baseClickPower: 15,   icon: '👑' },
+  { id: 'click4', name: '클릭 폭탄',     description: '클릭 파워 +60',     baseCost: 6000000,    baseClickPower: 60,   icon: '💥' },
+  { id: 'click5', name: '신의 손길',     description: '클릭 파워 +300',    baseCost: 120000000,  baseClickPower: 300,  icon: '⚡' },
+  { id: 'click6', name: '빅뱅 클릭',     description: '클릭 파워 +2000',   baseCost: 3000000000, baseClickPower: 2000, icon: '🌌' },
 ]
 
 export function getCost(upgrade: Upgrade | ClickUpgrade, owned: number): number {
