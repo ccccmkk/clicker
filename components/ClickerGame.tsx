@@ -320,6 +320,15 @@ export default function ClickerGame() {
           </span>
         ))}
 
+        {/* 공격 메시지 */}
+        {attackMsg && (
+          <div className="absolute top-2 left-0 right-0 flex justify-center z-30 pointer-events-none">
+            <div className="px-3 py-1.5 rounded-xl bg-black/60 border border-yellow-500/60 text-yellow-300 text-xs font-bold shadow-lg">
+              {attackMsg}
+            </div>
+          </div>
+        )}
+
         {/* 닉네임 */}
         <div className="absolute top-2 left-0 right-0 flex justify-center z-20">
           {editingNick ? (
@@ -504,13 +513,6 @@ export default function ClickerGame() {
                         </div>
                       </div>
                     </div>
-                    {attackMsgTarget === entry.user_id && attackMsg && (
-                      <div className="px-3 pb-1">
-                        <div className="px-2 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-xs text-center">
-                          {attackMsg}
-                        </div>
-                      </div>
-                    )}
                     {!isMe && (
                       <div className="flex gap-1.5 px-3 pb-2">
                         {shielded ? (
