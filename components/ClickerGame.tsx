@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { loadGameState, saveGameState } from '@/lib/supabase'
+import { loadGameState, saveGameState, fetchRanking, type RankEntry } from '@/lib/supabase'
 import { UPGRADES, getCost, getTotalCps, formatNumber } from '@/lib/gameLogic'
 
 type FloatingText = { id: number; x: number; y: number }
@@ -16,6 +16,11 @@ function getUserId(): string {
   return id
 }
 
+function getNickname(): string {
+  if (typeof window === 'undefined') return ''
+  return localStorage.getItem('cookie_nickname') || ''
+}
+
 export default function ClickerGame() {
   const [cookies, setCookies] = useState(0)
   const [totalCookies, setTotalCookies] = useState(0)
@@ -25,23 +30,38 @@ export default function ClickerGame() {
   const [cookieScale, setCookieScale] = useState(1)
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'store' | 'stats'>('store')
+  const [activeTab, setActiveTab] = useState<'store' | 'stats' | 'rank'>('store')
+  const [nickname, setNickname] = useState('')
+  const [nicknameInput, setNicknameInput] = useState('')
+  const [editingNick, setEditingNick] = useState(false)
+  const [ranking, setRanking] = useState<RankEntry[]>([])
+  const [rankLoading, setRankLoading] = useState(false)
 
   const cookiesRef = useRef(0)
   const totalCookiesRef = useRef(0)
   const totalClicksRef = useRef(0)
   const upgradesRef = useRef<Record<string, number>>({})
+  const nicknameRef = useRef('')
   const floatId = useRef(0)
   const userId = useRef('')
 
   useEffect(() => {
     userId.current = getUserId()
+    const savedNick = getNickname()
+    nicknameRef.current = savedNick || '익명의 제빵사'
+    setNickname(nicknameRef.current)
+
     loadGameState(userId.current).then((state) => {
       if (state) {
         cookiesRef.current = state.cookies
         totalCookiesRef.current = state.total_cookies
         totalClicksRef.current = state.total_clicks
         upgradesRef.current = state.upgrades || {}
+        if (state.nickname && state.nickname !== '익명의 제빵사') {
+          nicknameRef.current = state.nickname
+          setNickname(state.nickname)
+          localStorage.setItem('cookie_nickname', state.nickname)
+        }
         setCookies(state.cookies)
         setTotalCookies(state.total_cookies)
         setTotalClicks(state.total_clicks)
@@ -74,6 +94,7 @@ export default function ClickerGame() {
       setSaving(true)
       await saveGameState({
         user_id: userId.current,
+        nickname: nicknameRef.current,
         cookies: cookiesRef.current,
         total_cookies: totalCookiesRef.current,
         total_clicks: totalClicksRef.current,
@@ -116,7 +137,36 @@ export default function ClickerGame() {
     setUpgrades({ ...upgradesRef.current })
   }, [])
 
+  const saveNickname = useCallback(async () => {
+    const trimmed = nicknameInput.trim().slice(0, 16)
+    if (!trimmed) return
+    nicknameRef.current = trimmed
+    setNickname(trimmed)
+    localStorage.setItem('cookie_nickname', trimmed)
+    setEditingNick(false)
+    await saveGameState({
+      user_id: userId.current,
+      nickname: trimmed,
+      cookies: cookiesRef.current,
+      total_cookies: totalCookiesRef.current,
+      total_clicks: totalClicksRef.current,
+      upgrades: upgradesRef.current,
+    })
+  }, [nicknameInput])
+
+  const loadRanking = useCallback(async () => {
+    setRankLoading(true)
+    const data = await fetchRanking()
+    setRanking(data)
+    setRankLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'rank') loadRanking()
+  }, [activeTab, loadRanking])
+
   const cps = getTotalCps(upgradesRef.current)
+  const myRank = ranking.findIndex((r) => r.user_id === userId.current) + 1
 
   if (!loaded) {
     return (
@@ -128,9 +178,35 @@ export default function ClickerGame() {
 
   return (
     <div className="flex h-screen bg-amber-950 text-amber-100 overflow-hidden select-none">
-      {/* Left panel - Cookie */}
+      {/* Left panel */}
       <div className="flex-1 flex flex-col items-center justify-center gap-6 relative">
-        <div className="text-center">
+        {/* Nickname bar */}
+        <div className="absolute top-4 left-0 right-0 flex justify-center">
+          {editingNick ? (
+            <div className="flex gap-2 items-center">
+              <input
+                autoFocus
+                value={nicknameInput}
+                onChange={(e) => setNicknameInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && saveNickname()}
+                maxLength={16}
+                placeholder="닉네임 (최대 16자)"
+                className="bg-amber-800 border border-amber-600 rounded px-3 py-1 text-sm text-amber-100 placeholder-amber-600 outline-none focus:border-amber-400"
+              />
+              <button onClick={saveNickname} className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded text-sm">저장</button>
+              <button onClick={() => setEditingNick(false)} className="text-amber-600 hover:text-amber-400 text-sm">취소</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setNicknameInput(nickname); setEditingNick(true) }}
+              className="text-amber-400 hover:text-amber-200 text-sm flex items-center gap-1 transition-colors"
+            >
+              👤 {nickname} <span className="text-amber-600 text-xs">✏️</span>
+            </button>
+          )}
+        </div>
+
+        <div className="text-center mt-8">
           <div className="text-5xl font-bold text-amber-300 drop-shadow-lg">
             🍪 {formatNumber(cookies)}
           </div>
@@ -157,7 +233,7 @@ export default function ClickerGame() {
           ))}
         </button>
 
-        <div className="text-amber-600 text-xs">
+        <div className="text-amber-600 text-xs text-center">
           총 클릭: {formatNumber(totalClicks)} | 총 생산: {formatNumber(totalCookies)}
         </div>
 
@@ -168,20 +244,26 @@ export default function ClickerGame() {
         )}
       </div>
 
-      {/* Right panel - Store */}
+      {/* Right panel */}
       <div className="w-80 bg-amber-900/60 border-l border-amber-800 flex flex-col">
         <div className="flex border-b border-amber-800">
           <button
             onClick={() => setActiveTab('store')}
-            className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'store' ? 'bg-amber-700 text-amber-100' : 'text-amber-400 hover:text-amber-200'}`}
+            className={`flex-1 py-3 text-xs font-bold transition-colors ${activeTab === 'store' ? 'bg-amber-700 text-amber-100' : 'text-amber-400 hover:text-amber-200'}`}
           >
             🏪 상점
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'stats' ? 'bg-amber-700 text-amber-100' : 'text-amber-400 hover:text-amber-200'}`}
+            className={`flex-1 py-3 text-xs font-bold transition-colors ${activeTab === 'stats' ? 'bg-amber-700 text-amber-100' : 'text-amber-400 hover:text-amber-200'}`}
           >
             📊 통계
+          </button>
+          <button
+            onClick={() => setActiveTab('rank')}
+            className={`flex-1 py-3 text-xs font-bold transition-colors ${activeTab === 'rank' ? 'bg-amber-700 text-amber-100' : 'text-amber-400 hover:text-amber-200'}`}
+          >
+            🏆 랭킹
           </button>
         </div>
 
@@ -205,7 +287,7 @@ export default function ClickerGame() {
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-amber-200 flex justify-between">
                     <span>{upgrade.name}</span>
-                    <span className="text-amber-400 text-xs ml-1">{owned > 0 && `×${owned}`}</span>
+                    {owned > 0 && <span className="text-amber-400 text-xs">×{owned}</span>}
                   </div>
                   <div className="text-amber-500 text-xs truncate">{upgrade.description}</div>
                   <div className="text-amber-300 text-sm font-mono">🍪 {formatNumber(cost)}</div>
@@ -239,6 +321,62 @@ export default function ClickerGame() {
                   <div className="text-amber-600 text-xs">아직 건물이 없습니다</div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'rank' && (
+            <div className="p-2 space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="font-bold text-amber-300 text-sm">🏆 총 생산량 랭킹</h3>
+                <button
+                  onClick={loadRanking}
+                  className="text-amber-600 hover:text-amber-400 text-xs transition-colors"
+                >
+                  🔄 새로고침
+                </button>
+              </div>
+
+              {myRank > 0 && (
+                <div className="bg-amber-700/60 border border-amber-500 rounded-lg px-3 py-2 text-xs text-center text-amber-200">
+                  내 순위: <span className="font-bold text-amber-300 text-sm">#{myRank}</span>
+                </div>
+              )}
+
+              {rankLoading ? (
+                <div className="text-center text-amber-500 text-sm py-8 animate-pulse">
+                  🍪 랭킹 불러오는 중...
+                </div>
+              ) : ranking.length === 0 ? (
+                <div className="text-center text-amber-600 text-sm py-8">
+                  아직 데이터가 없습니다
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {ranking.map((entry, i) => {
+                    const isMe = entry.user_id === userId.current
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`
+                    return (
+                      <div
+                        key={entry.user_id}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                          isMe
+                            ? 'bg-amber-600/50 border border-amber-500'
+                            : 'bg-amber-900/50 border border-amber-800'
+                        }`}
+                      >
+                        <span className="w-6 text-center text-base flex-shrink-0">{medal}</span>
+                        <span className={`flex-1 truncate font-medium ${isMe ? 'text-amber-200' : 'text-amber-300'}`}>
+                          {entry.nickname || '익명의 제빵사'}
+                          {isMe && <span className="text-amber-500 text-xs ml-1">(나)</span>}
+                        </span>
+                        <span className="text-amber-400 text-xs font-mono flex-shrink-0">
+                          🍪 {formatNumber(entry.total_cookies)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

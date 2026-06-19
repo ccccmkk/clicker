@@ -1,6 +1,7 @@
 create table if not exists game_state (
   id uuid primary key default gen_random_uuid(),
   user_id text unique not null,
+  nickname text default '익명의 제빵사',
   cookies bigint default 0,
   total_clicks bigint default 0,
   total_cookies bigint default 0,
@@ -11,6 +12,5 @@ create table if not exists game_state (
 
 alter table game_state enable row level security;
 
--- Allow anyone to read/write their own game state (no auth, using user_id from client)
-create policy "Anyone can upsert game state" on game_state
+create policy "Anyone can read/write game state" on game_state
   for all using (true) with check (true);
