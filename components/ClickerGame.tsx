@@ -57,7 +57,9 @@ export default function ClickerGame() {
 
   const cookieSkin = COOKIE_SKINS.find(s => s.id === activeCookieSkinId) ?? COOKIE_SKINS[0]
   const bgTheme = BG_THEMES.find(s => s.id === activeBgThemeId) ?? BG_THEMES[0]
-  const skin = { ...bgTheme, emoji: cookieSkin.emoji, theme: { ...bgTheme.theme, cookieGrad: cookieSkin.grad } }
+  // 메뉴는 항상 고정 다크 테마, 쿠키 배경만 bgTheme 적용
+  const panelTheme = { bg: 'bg-gray-950', panel: 'bg-gray-900/90', border: 'border-gray-700', text: 'text-gray-100', subtext: 'text-gray-400', btn: 'bg-gray-800 border-gray-600', btnHover: 'active:bg-gray-700' }
+  const skin = { ...bgTheme, emoji: cookieSkin.emoji, theme: { ...panelTheme, cookieGrad: cookieSkin.grad } }
 
   useEffect(() => {
     userId.current = getUserId()
