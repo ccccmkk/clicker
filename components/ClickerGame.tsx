@@ -120,14 +120,20 @@ export default function ClickerGame() {
     return () => clearInterval(interval)
   }, [loaded])
 
-  // Realtime ranking
+  // Realtime ranking + 15초 폴링 백업
   useEffect(() => {
     fetchRanking().then(setRanking)
+
+    // Supabase Realtime (publication 등록 필요: alter publication supabase_realtime add table game_state)
     const channel = supabase.channel('ranking')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_state' }, () => {
         fetchRanking().then(setRanking)
       }).subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    // 15초마다 폴링 (realtime 미작동 시 백업)
+    const poll = setInterval(() => fetchRanking().then(setRanking), 15000)
+
+    return () => { supabase.removeChannel(channel); clearInterval(poll) }
   }, [])
 
   // 황금쿠키 스케줄
